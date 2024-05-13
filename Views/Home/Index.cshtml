@@ -1,0 +1,57 @@
+﻿@* @{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+ *@
+
+
+ @model DemoProject.Models.LoginModel
+@{
+    ViewData["Title"] = "Login Page";
+    Layout = "~/Views/Shared/LayoutForLogin.cshtml";
+}
+@{
+    // Retrieve the error message from TempData
+    string errorMessage = TempData["ErrorMessage"] as string;
+}
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @errorMessage
+    </div>
+}
+
+<div class="col-md-6 text-center text-md-start d-flex d-sm-flex d-md-flex justify-content-center align-items-center justify-content-md-start align-items-md-center justify-content-xl-center">
+    <div style="max-width: 350px;">
+        <h2 class="text-uppercase fw-bold mb-2">Login</h2>
+
+        <form id="loginForm" novalidate="novalidate" asp-action="Login" asp-controller="Home">
+            <div class="mb-3">
+                <label for="exampleInputEmail1" class="form-label">Email address</label>
+                <input type="email" class="form-control" id="exampleInputEmail1" asp-for="Email" aria-describedby="emailHelp" name="Email" type="Email" placeholder="Enter email" autocomplete="off" required="required">
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label for="exampleInputPassword1" class="form-label">Password</label>
+                <input type="password" class="form-control" id="exampleInputPassword1" asp-for="Password" type="password" placeholder="Password" required="required">
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+             <button type="submit" class="btn btn-primary">Submit</button> 
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('custom-back-button').addEventListener('click', function () {
+            window.location.href = '/Home/Index'; // Change '/' to the URL of your home page
+        });
+
+    </script>
+
+}

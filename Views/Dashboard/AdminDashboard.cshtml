@@ -1,0 +1,14 @@
+﻿@* @model List<DemoProject.Models.ProductModel> *@
+@model DemoProject.Models.User
+
+@{
+    ViewData["Title"] = "Admin Page";
+    Layout = "~/Views/Shared/LayoutForLogin.cshtml";
+}
+
+<!-- Access the session data from the ViewModel -->
+<div>
+    <h1>Welcome, @Model.FirstName!</h1>
+    <p>Your email: @Model.Email</p>
+</div>
+
