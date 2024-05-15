@@ -1,13 +1,168 @@
-﻿@model DemoProject.Models.User
+﻿@model DemoProject.DTO.ProductDTO
+@using Microsoft.AspNetCore.Http;
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor accessor
+
 @{
     ViewData["Title"] = "User Page";
     Layout = "~/Views/Shared/LayoutForLogin.cshtml";
 }
-<!-- Access the session data from the ViewModel -->
-<div>
-    <h1>Welcome, @Model.FirstName!</h1>
-    <p>Your email: @Model.Email</p>
+
+<div class="d-grid gap-2 d-md-flex justify-content-md-end">
+    <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#cartDataModal" onclick="showCartDataModal()">View Your Cart</button>
 </div>
 
+<div class="search-container">
+    <br>
+    <div class="input-group">
+        <span class="input-group-text"><i class="fas fa-search"></i></span>
+        <input type="text" class="form-control" id="searchInput" placeholder="Search...">
+    </div>
+</div>
 
+<div class="mt-3 mb-3">
+    <select class="form-select" id="categorySelect">
+        <option>Select Category</option>
+        @foreach (var category in Model.Categories)
+        {
+            <option value="@category.Name">@category.Name</option>
+        }
+    </select>
+    <span asp-validation-for="@Model.Product.CategoryId" class="text-danger"></span>
+</div>
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Image</th>
+                            <th scope="col">Product Name</th>
+                            <th scope="col">Description</th>
+                            <th scope="col">Price</th>
+                            <th scope="col">Quantity</th>
+                            <th scope="col">Category</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody">
+                        @if (Model.Products.Count > 0)
+                        {
+                            @foreach (var product in Model.Products.OrderBy(p => p.Id))
+                            {
+                                <tr>
+                                    <td>@product.Id</td>
+                                    <td style="width: 50px; height: 50px;"><img src="@Url.Content(product.Image)" style="max-width: 100%; max-height: 100%;" /></td>
+                                    <td>@product.Title</td>
+                                    <td>@product.Description</td>
+                                    <td>@product.Price</td>
+                                    <td>@(product.Quantity > 0 ? "Available" : "Not Available")</td>
+                                    <td>@product.Category.Name</td>
+                                    <td>
+                                        <button class="btn btn-info" onclick="OpenAddToCartModal('@product.Id', '@product.Title', '@product.Price')">Add to Cart</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6">No data available</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addToCartModalLabel">Add to Cart</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="clearFields()"></button>
+            </div>
+            <form id="addToCartForm">
+                <div class="modal-body">
+                    <input type="hidden" id="productId" name="productId" />
+
+                    <label for="productName" class="form-label">Product Name</label>
+                    <input type="text" class="form-control" id="productName" name="productName" readonly />
+                    <br />
+                    <label for="quantity" class="form-label">Quantity</label>
+                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" required />
+                    <br />
+                    <label for="price" class="form-label">Price</label>
+                    <input type="number" class="form-control" id="price" name="price" readonly />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearFields()">Close</button>
+                    <button type="submit" class="btn btn-primary" onclick="addToCart()">Add To Cart</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Cart Data Modal -->
+<div class="modal fade" id="cartDataModal" tabindex="-1" aria-labelledby="cartDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cartDataModalLabel">View Cart</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="modalCloseEventListener()"></button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <p id="cartProductName"></p>
+                <p id="cartQuantity"></p>
+                <p id="cartPrice"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="modalCloseEventListener()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <partial name="_Script" />
+}
+
+<script>
+
+    document.getElementById("searchInput").addEventListener("input", filterProducts);
+    document.getElementById("categorySelect").addEventListener("change", filterProducts);
+    function filterProducts() {
+        var searchText = document.getElementById("searchInput").value.toLowerCase();
+        var categoryId = document.getElementById("categorySelect").value;
+
+        var rows = document.querySelectorAll("#productTableBody tr");
+
+        rows.forEach(function (row) {
+            var productName = row.querySelector("td:nth-child(2)").innerText.toLowerCase();
+            var categoryCell = row.querySelector("td:nth-child(6)");
+            var productId = row.querySelector("td:first-child").innerText;
+
+            var textMatch = productName.includes(searchText) || searchText === "";
+            var categoryMatch = categoryCell.innerText.trim() === categoryId || categoryId === "Select Category";
+
+            if (!categoryMatch) {
+                document.querySelectorAll("#productTableBody tr").innerText = "Products not found related to this Category" ;
+            }
+            if (textMatch && categoryMatch) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    }
+
+</script>
 
